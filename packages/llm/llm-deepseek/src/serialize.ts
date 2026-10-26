@@ -28,10 +28,10 @@ function assistant(message: Message, model: string, onReplayDegrade?: (reason: s
   return message.content.flatMap((block, index): WireBlock | WireBlock[] => {
     switch (block.type) {
       case 'text': return block.text.length === 0 ? [] : { type: 'text', text: block.text }
-      case 'reasoning': return {
+      case 'reasoning': return replay?.[index]?.redacted === undefined ? {
         type: 'thinking', thinking: block.text,
         ...replay?.[index]?.signature === undefined ? {} : { signature: replay[index].signature },
-      }
+      } : { type: 'redacted_thinking', data: replay[index].redacted }
       case 'tool-call': return { type: 'tool_use', id: block.id, name: block.name, input: toolInput(block.arguments) }
       default: return unsupported(`assistant content ${block.type}`)
     }

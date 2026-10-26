@@ -7,6 +7,8 @@ import type { Message, ReplayEnvelope } from '@deepseek-ai/dsh-llm'
 export interface ReplayBlock {
   type: 'text' | 'reasoning' | 'tool-call'
   signature?: string
+  /** Opaque Anthropic redacted-thinking payload, replayed verbatim. */
+  redacted?: string
 }
 
 /** Reject malformed JSON objects at provider and durable-data reads.
@@ -58,7 +60,13 @@ function validateReplay(message: Message, model: string): ReplayBlock[] | undefi
     if (block.type !== message.content[index]?.type
       || (block.type !== 'text' && block.type !== 'reasoning' && block.type !== 'tool-call')) return fail('block type mismatch')
     if (block.signature !== undefined && (block.type !== 'reasoning' || typeof block.signature !== 'string')) return fail('invalid signature')
-    return { type: block.type, ...typeof block.signature === 'string' ? { signature: block.signature } : {} }
+    if (block.redacted !== undefined && (block.type !== 'reasoning' || typeof block.redacted !== 'string')) return fail('invalid redacted payload')
+    if (block.signature !== undefined && block.redacted !== undefined) return fail('signature and redacted payload are mutually exclusive')
+    return {
+      type: block.type,
+      ...typeof block.signature === 'string' ? { signature: block.signature } : {},
+      ...typeof block.redacted === 'string' ? { redacted: block.redacted } : {},
+    }
   })
   return response.model === model ? blocks : undefined
 }

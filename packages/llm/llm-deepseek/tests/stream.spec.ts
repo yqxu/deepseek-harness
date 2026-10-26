@@ -85,8 +85,16 @@ describe('Messages stream', () => {
       { type: 'content_block_stop', index: 0 }, ...end('tool_use')]), MODEL))).rejects.toMatchObject({ code: 'MALFORMED_RESPONSE' })
   })
 
-  it('refuses unsupported response content, empty responses and premature EOF', async () => {
-    await expect(chunks(translate(events([start, { type: 'content_block_start', index: 0, content_block: { type: 'redacted_thinking', data: 'x' } }]), MODEL))).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
+  it('preserves redacted thinking as opaque reasoning replay instead of failing the turn', async () => {
+    const result = await assemble(translate(events([start,
+      { type: 'content_block_start', index: 0, content_block: { type: 'redacted_thinking', data: 'opaque' } },
+      { type: 'content_block_stop', index: 0 }, ...end()]), MODEL))
+    expect(result.message.content).toEqual([{ type: 'reasoning', text: '' }])
+    expect(result.message.source.replayState).toMatchObject({ blocks: [{ type: 'reasoning', redacted: 'opaque' }] })
+  })
+
+  it('refuses unknown response content, empty responses and premature EOF', async () => {
+    await expect(chunks(translate(events([start, { type: 'content_block_start', index: 0, content_block: { type: 'mystery', data: 'x' } }]), MODEL))).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
     await expect(chunks(translate(events([start, ...end()]), MODEL))).rejects.toMatchObject({ code: 'EMPTY_RESPONSE' })
     await expect(chunks(translate(events(textEvents.slice(0, -1)), MODEL))).rejects.toMatchObject({ code: 'STREAM_CLOSED' })
   })

@@ -11,6 +11,7 @@ export type WireBlock = WireInput
   /** Activates or removes a declared tool by name in conversation order. */
   | { type: 'tool_addition' | 'tool_removal'; tool: { type: 'tool_reference'; name: string } }
   | { type: 'thinking'; thinking: string; signature?: string }
+  | { type: 'redacted_thinking'; data: string }
   | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; tool_use_id: string; content: WireInput[]; is_error?: boolean }
 

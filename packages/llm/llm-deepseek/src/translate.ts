@@ -52,6 +52,12 @@ function startBlock(event: Record<string, unknown>, index: number): Block {
       content = { type: 'reasoning', text: string(native.thinking) }
       replay = { type: 'reasoning', ...native.signature === undefined ? {} : { signature: string(native.signature) } }
       break
+    case 'redacted_thinking':
+      // Anthropic may redact reasoning; keep an opaque empty reasoning block so the
+      // turn survives and the native payload can be replayed verbatim.
+      content = { type: 'reasoning', text: '' }
+      replay = { type: 'reasoning', redacted: string(native.data) }
+      break
     case 'tool_use':
       content = { type: 'tool-call', id: ToolCallId(string(native.id)), name: string(native.name), arguments: JSON.stringify(object(native.input)) }
       if (!content.id || !content.name) return malformed('empty tool identity')

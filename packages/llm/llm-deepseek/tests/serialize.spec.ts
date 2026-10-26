@@ -45,6 +45,18 @@ describe('Messages request conversion', () => {
     expect(body([assistant([{ type: 'text', text: ' ' }])]).messages[0]?.content).toEqual([{ type: 'text', text: ' ' }])
   })
 
+  it('replays redacted thinking verbatim', () => {
+    const content: ContentBlock[] = [{ type: 'reasoning', text: '' }]
+    const message = createAssistantMessage({ content, source: {
+      provider: 'deepseek-official', model: MODEL,
+      replayState: replayState(MODEL, [{ type: 'reasoning', redacted: 'opaque' }]),
+    } })
+    expect(body([user(), message]).messages).toEqual([
+      { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+      { role: 'assistant', content: [{ type: 'redacted_thinking', data: 'opaque' }] },
+    ])
+  })
+
   it('does not flush a system update at an omitted empty assistant message', () => {
     const request = nativeBody([
       user(), createSystemMessage('updated'), assistant([{ type: 'text', text: '' }]),
